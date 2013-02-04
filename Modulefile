@@ -1,0 +1,8 @@
+name         'jgoldschrafe-selinux_types'
+version      '0.0.1'
+source       'https://github.com/jgoldschrafe/puppet-selinux_types'
+author       'Jeff Goldschrafe'
+license      'Public Domain'
+summary      'SELinux types'
+description  'Types for interacting with the SELinux database from Puppet'
+project_page 'https://github.com/jgoldschrafe/puppet-selinux_types'
