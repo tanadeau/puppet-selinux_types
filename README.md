@@ -15,10 +15,12 @@ refresh an `exec` to handle that if you want that behavior.
 
 Example:
 
-```selinux_fcontext { '/usr/lib(64)?/nagios/plugins/check_disk':
+```puppet
+selinux_fcontext { '/usr/lib(64)?/nagios/plugins/check_disk':
   ensure   => 'present',
   selrange => 's0.c1023',
   seltype  => 'nagios_unconfined_plugin_exec_t',
   seluser  => 'root',
-}```
+}
+```
 
