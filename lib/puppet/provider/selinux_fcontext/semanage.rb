@@ -1,0 +1,98 @@
+Puppet::Type.type(:selinux_fcontext).provide(:semanage) do
+  desc "Manage SELinux file contexts using semanage"
+
+  commands :semanage => '/usr/sbin/semanage'
+
+  mk_resource_methods
+
+  @@filetype_arg_map = {
+    ''                 => '',
+    'all files'        => '',
+    '--'               => '--',
+    'regular file'     => '--',
+    '-d'               => '-d',
+    'directory'        => '-d',
+    '-c'               => '-c',
+    'character device' => '-c',
+    '-b'               => '-b',
+    'block device'     => '-b',
+    '-s'               => '-s',
+    'socket'           => '-s',
+    '-l'               => '-l',
+    'symbolic link'    => '-l',
+    '-p'               => '-p',
+    'named pipe'       => '-p',
+  }
+
+  def self.prefetch(resources)
+    found = {}
+
+    execpipe("#{command(:semanage)} fcontext -lC") do |out|
+      out.readlines[2..-1].each do |line|
+        filespec, filetype, context = line.split(/\s\s+/)
+        seluser, selrole, seltype, selrange = context.split(':')
+        found[filespec] = { :ensure => :present, :filetype => filetype,
+                            :selrange => selrange, :seltype => seltype,
+                            :seluser => seluser }
+      end
+    end
+
+    resources.each do |name, resource|
+      if found.has_key?(name)
+        debug "Found #{name} in cache"
+        resource.provider = new(found[name])
+      else
+        debug "Did not find #{name} in cache"
+        resource.provider = new(:ensure => :absent)
+      end
+    end
+  end
+
+  def create
+    @flush_action = :create
+  end
+
+  def destroy
+    @flush_action = :destroy
+  end
+
+  def exists?
+    self.ensure != :absent
+  end
+
+  def flush
+    case @flush_action
+    when :create
+      do_create
+    when :destroy
+      do_destroy
+    else
+      do_update
+    end
+  end
+
+  private
+    def do_create
+      optargs = []
+      optargs << '-f' << @@filetype_arg_map[filetype] if filetype
+      optargs << '-r' << resource[:selrange] if resource[:selrange]
+      optargs << '-s' << resource[:seluser] if resource[:seluser]
+      semanage 'fcontext', '-a', '-t', resource[:seltype], optargs, name
+      self.ensure = :present
+    end
+
+    def do_destroy
+      semanage 'fcontext', '-d', name
+      self.ensure = :absent
+    end
+
+    def do_update
+      optargs = []
+      optargs << '-f' << @@filetype_arg_map[resource[:filetype]] if resource[:filetype]
+      optargs << '-r' << resource[:selrange] if resource[:selrange]
+      optargs << '-t' << resource[:seltype] if resource[:seltype]
+      optargs << '-s' << resource[:seluser] if resource[:seluser]
+      semanage 'fcontext', '-m', optargs, name
+    end
+
+end
