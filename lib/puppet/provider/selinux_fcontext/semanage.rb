@@ -5,7 +5,7 @@ Puppet::Type.type(:selinux_fcontext).provide(:semanage) do
 
   mk_resource_methods
 
-  @@filetype_arg_map = {
+  class_variable_set(:@@filetype_arg_map, {
     ''                 => '',
     'all files'        => '',
     '--'               => '--',
@@ -22,13 +22,14 @@ Puppet::Type.type(:selinux_fcontext).provide(:semanage) do
     'symbolic link'    => '-l',
     '-p'               => '-p',
     'named pipe'       => '-p',
-  }
+  })
 
   def self.prefetch(resources)
     found = {}
 
     execpipe("#{command(:semanage)} fcontext -lC") do |out|
-      out.readlines[2..-1].each do |line|
+      lines = out.readlines[2..-1] || []
+      lines.each do |line|
         filespec, filetype, context = line.split(/\s\s+/)
         seluser, selrole, seltype, selrange = context.split(':')
         found[filespec] = { :ensure => :present, :filetype => filetype,
@@ -39,10 +40,8 @@ Puppet::Type.type(:selinux_fcontext).provide(:semanage) do
 
     resources.each do |name, resource|
       if found.has_key?(name)
-        debug "Found #{name} in cache"
         resource.provider = new(found[name])
       else
-        debug "Did not find #{name} in cache"
         resource.provider = new(:ensure => :absent)
       end
     end
