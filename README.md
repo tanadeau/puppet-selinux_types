@@ -32,7 +32,7 @@ Creates, deletes, and modifies the SELinux network port type definitions. It acc
 Example:
 
 ```puppet
-selinux_port { 'tcp/80':
+selinux_port { 'tcp/8080-8085':
   seltype => 'http_port_t',
 }
 
