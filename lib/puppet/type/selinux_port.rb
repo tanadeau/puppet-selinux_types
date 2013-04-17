@@ -25,9 +25,8 @@ Puppet::Type.newtype(:selinux_port) do
         when /^\d+$/
           fail("Port value out of range. Should be between 1 and 65535") unless value.to_i.between?(1,65535)
         when /^(\d+)-(\d+)$/
-          first = $1.to_i
-          second = $2.to_i
-          fail("Wrong port range value. Should be between 1 and 65535 (eg. 8080-8085") unless (first < second and first >= 1 and second<=65535)
+          min, max = $1.to_i, $2.to_i
+          fail("Wrong port range value. Should be between 1 and 65535 (eg. 8080-8085") unless (min < max && min.between?(1,65535) && max.between?(1,65535))
         else
           fail("Wrong port type. Should be either Integer or Range (eg. 80, 8080-8085")
       end
